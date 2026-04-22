@@ -1,0 +1,56 @@
+/* Common UI Components & Helpers */
+
+.d-header { margin-bottom: 32px; }
+.d-header h2 { font-size: 28px; margin-bottom: 4px; }
+.d-header p { color: var(--text-secondary); }
+
+.status-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 100px;
+  background: var(--mauve-light);
+  color: var(--mauve-primary);
+}
+
+.status-badge.gray { background: #eee; color: #888; }
+.status-badge.active { background: #EBFFF1; color: #34C759; }
+.status-badge.dispensed { background: #EBFFF1; color: #34C759; }
+
+.text-mauve { color: var(--mauve-primary); }
+.text-yellow { color: var(--yellow-accent); }
+.w-full { width: 100%; }
+
+.animate-spin { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* Toast Notifications */
+.toast {
+  position: fixed;
+  top: 80px;
+  right: 24px;
+  padding: 16px 24px;
+  border-radius: var(--radius-l);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 1000;
+  box-shadow: var(--shadow-medium);
+  animation: slideInRight 0.3s cubic-bezier(0.1, 0.7, 0.1, 1);
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.text-success { color: #34C759; }
+.text-error { color: #FF3B30; }
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.p-40 { padding: 40px; }

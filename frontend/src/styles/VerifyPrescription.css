@@ -1,0 +1,73 @@
+/* Verify Prescription Page Styles */
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  padding: 8px 8px 8px 20px;
+  border-radius: var(--radius-xl);
+  margin-bottom: 40px;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  padding: 12px;
+  outline: none;
+}
+
+.search-icon { color: var(--text-secondary); }
+
+.prescription-card {
+  padding: 32px;
+  border-radius: var(--radius-xl);
+  text-align: left;
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.p-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 100px;
+}
+
+.p-badge.success { background: #EBFFF1; color: #34C759; border: 1px solid #34C75933; }
+
+.card-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 20px;
+  background: rgba(0,0,0,0.02);
+  border-radius: var(--radius-l);
+  margin-bottom: 24px;
+}
+
+.info-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 4px; }
+.info-value { font-weight: 600; color: var(--mauve-deep); }
+
+.card-meds {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.med-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.med-main { display: flex; align-items: center; gap: 8px; }
+.med-name { font-weight: 600; }
+.med-dose { font-size: 13px; color: var(--text-secondary); }

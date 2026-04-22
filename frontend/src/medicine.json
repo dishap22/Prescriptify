@@ -1,0 +1,7 @@
+[
+  { "_id": "MED-001", "name": "Paracetamol 500mg" },
+  { "_id": "MED-002", "name": "Amoxicillin 250mg" },
+  { "_id": "MED-003", "name": "Ibuprofen 400mg" },
+  { "_id": "MED-004", "name": "Cetirizine 10mg" },
+  { "_id": "MED-005", "name": "Azithromycin 500mg" }
+]

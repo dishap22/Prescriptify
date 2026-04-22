@@ -1,0 +1,52 @@
+/* Auth / Role Selection Styles */
+.auth-section {
+  padding: 80px 24px;
+  text-align: center;
+}
+
+.section-title {
+  font-size: 32px;
+  margin-bottom: 48px;
+}
+
+.role-card {
+  padding: 40px 24px;
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.1, 0.7, 0.1, 1);
+}
+
+.role-card:hover {
+  transform: translateY(-10px);
+  background: white;
+}
+
+.role-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+}
+
+.role-icon-wrapper.doctor, 
+.role-icon-wrapper.patient {
+  background: var(--mauve-primary);
+}
+
+.role-icon-wrapper.pharmacist {
+  background: var(--yellow-accent);
+}
+
+.icon-doctor, .icon-patient {
+  color: var(--yellow-accent);
+}
+
+.icon-pharmacist {
+  color: var(--mauve-primary);
+}
+
+.role-card h3 { margin-bottom: 12px; }
+.role-card p { color: var(--text-secondary); font-size: 14px; }

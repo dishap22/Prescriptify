@@ -1,0 +1,25 @@
+/* Create Prescription Form Styles */
+
+.prescription-form {
+  padding: 32px;
+  border-radius: var(--radius-xl);
+}
+
+.form-section { margin-bottom: 32px; }
+.form-section h4 { 
+  font-size: 14px; 
+  text-transform: uppercase; 
+  letter-spacing: 0.05em; 
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+.input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .input-grid { grid-template-columns: 1fr; }
+}

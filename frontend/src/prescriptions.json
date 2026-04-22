@@ -1,0 +1,32 @@
+[
+  {
+    "_id": "RX-VAL-001",
+    "patientId": "PAT-101",
+    "doctor": "Dr. Smith",
+    "date": "2026-04-20",
+    "status": "ACTIVE",
+    "medications": [
+      { "name": "Paracetamol 500mg", "dosage": "1 tab", "frequency": "3 times a day", "duration": "5 days" }
+    ]
+  },
+  {
+    "_id": "RX-VAL-002",
+    "patientId": "PAT-101",
+    "doctor": "Dr. Wilson",
+    "date": "2026-04-21",
+    "status": "ACTIVE",
+    "medications": [
+      { "name": "Amoxicillin 250mg", "dosage": "1 cap", "frequency": "Every 8 hours", "duration": "7 days" }
+    ]
+  },
+  {
+    "_id": "RX-BAD-999",
+    "patientId": "PAT-101",
+    "doctor": "Dr. Jones",
+    "date": "2026-04-15",
+    "status": "DISPENSED",
+    "medications": [
+      { "name": "Ibuprofen 400mg", "dosage": "1 tab", "frequency": "Twice daily", "duration": "3 days" }
+    ]
+  }
+]
