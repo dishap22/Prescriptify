@@ -41,9 +41,6 @@ function App() {
   const [medicines, setMedicines] = useState([]);
   const [patientId, setPatientId] = useState('');
   const [selectedMed, setSelectedMed] = useState('');
-  const [dosage, setDosage] = useState('');
-  const [frequency, setFrequency] = useState('');
-  const [duration, setDuration] = useState('');
   
   const [searchId, setSearchId] = useState('');
   const [foundPrescription, setFoundPrescription] = useState(null);
@@ -58,29 +55,22 @@ function App() {
     setTimeout(() => setMessage(null), 5000);
   };
 
-  const handleIssue = async () => {
-    // Advanced Field Checks
-    if (!patientId || !dosage || !frequency || !duration) return showMsg("Please fill all fields", "error");
+  const handleIssue = async (dosageVal, freqVal, durVal) => {
+    if (!patientId || !dosageVal || !freqVal || !durVal) return showMsg("Please fill all fields", "error");
     
-    const durNum = Number(duration);
+    const durNum = Number(durVal);
     if (durNum <= 0 || durNum > 365) return showMsg("Duration must be between 1 and 365 days", "error");
-    
-    if (dosage.length > 50) return showMsg("Dosage description is too long", "error");
-    if (frequency.length > 50) return showMsg("Frequency description is too long", "error");
 
     setLoading(true);
     try {
       const res = await API.post('/prescriptions', {
         patientId,
         doctorId: 'DOC-001',
-        medications: [{ medicine: selectedMed, dosage, frequency, duration: durNum }]
+        medications: [{ medicine: selectedMed, dosage: dosageVal, frequency: freqVal, duration: durNum }]
       }, { headers: { 'x-user-role': ROLES.DOCTOR } });
       
       showMsg("Prescription issued successfully! ID: " + res.data.id, "success");
       setPatientId('');
-      setDosage('');
-      setFrequency('');
-      setDuration('');
     } catch (err) {
       showMsg(err.response?.data?.error || "Failed to issue prescription", "error");
     } finally {
@@ -92,12 +82,14 @@ function App() {
     if (!id) return;
     setLoading(true);
     try {
-      const res = await API.get(`/prescriptions/${id}`, { 
+      const res = await API.get(`/prescriptions/${id}/verify`, { 
         headers: { 'x-user-role': ROLES.PHARMACIST } 
       });
-      setFoundPrescription(res.data);
+      // Backend returns { prescription: ... } for /verify
+      setFoundPrescription(res.data.prescription);
+      showMsg("Prescription verified and authentic.", "success");
     } catch (err) {
-      showMsg("Prescription not found.", "error");
+      showMsg(err.response?.data?.error || "Security Verification Failed.", "error");
       setFoundPrescription(null);
     } finally {
       setLoading(false);
@@ -151,9 +143,6 @@ function App() {
                       <CreatePrescription 
                         patientId={patientId} setPatientId={setPatientId}
                         selectedMed={selectedMed} setSelectedMed={setSelectedMed}
-                        dosage={dosage} setDosage={setDosage}
-                        frequency={frequency} setFrequency={setFrequency}
-                        duration={duration} setDuration={setDuration}
                         medicines={medicines} handleIssue={handleIssue} loading={loading}
                       />
                     )}

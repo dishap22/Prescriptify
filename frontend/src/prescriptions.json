@@ -6,7 +6,7 @@
     "date": "2026-04-20",
     "status": "ACTIVE",
     "medications": [
-      { "name": "Paracetamol 500mg", "dosage": "1 tab", "frequency": "3 times a day", "duration": "5 days" }
+      { "name": "Paracetamol 500mg", "dosage": "50mg", "frequency": "3 times a day", "duration": 5 }
     ]
   },
   {
@@ -16,7 +16,7 @@
     "date": "2026-04-21",
     "status": "ACTIVE",
     "medications": [
-      { "name": "Amoxicillin 250mg", "dosage": "1 cap", "frequency": "Every 8 hours", "duration": "7 days" }
+      { "name": "Amoxicillin 250mg", "dosage": "25mg", "frequency": "2 times a day", "duration": 7 }
     ]
   },
   {
@@ -26,7 +26,7 @@
     "date": "2026-04-15",
     "status": "DISPENSED",
     "medications": [
-      { "name": "Ibuprofen 400mg", "dosage": "1 tab", "frequency": "Twice daily", "duration": "3 days" }
+      { "name": "Ibuprofen 400mg", "dosage": "40mg", "frequency": "2 times a day", "duration": 3 }
     ]
   }
 ]

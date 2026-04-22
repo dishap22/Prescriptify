@@ -28,19 +28,7 @@ app.post('/api/prescriptions', authorize('CREATE_PRESCRIPTION'), async (req, res
         });
         const prescriptionData = builder.build();
 
-        // 2. Verification (Chain of Responsibility)
-        const authenticityHandler = new AuthenticityCheckHandler();
-        const fraudHandler = new FraudCheckHandler();
-        const duplicateHandler = new DuplicateCheckHandler();
-
-        authenticityHandler.setNext(fraudHandler).setNext(duplicateHandler);
-
-        const isValid = await authenticityHandler.handle(prescriptionData);
-        if (!isValid) {
-            return res.status(400).json({ error: "Prescription verification failed. Check logs for details." });
-        }
-
-        // 3. Initial State Setting & Event Broadcast (State Pattern)
+        // 2. Initial State Setting & Event Broadcast (State Pattern)
         const prescription = await PrescriptionStateManager.setInitialState(prescriptionData);
 
         res.status(201).json({
@@ -55,7 +43,7 @@ app.post('/api/prescriptions', authorize('CREATE_PRESCRIPTION'), async (req, res
     }
 });
 
-// 2. Verify/Get Prescription (DOCTOR, PHARMACIST, PATIENT)
+// 2. Get Prescription Details (PATIENT, DOCTOR, PHARMACIST)
 app.get('/api/prescriptions/:id', authorize('VIEW_PRESCRIPTION'), async (req, res) => {
     try {
         const { id } = req.params;
@@ -68,6 +56,33 @@ app.get('/api/prescriptions/:id', authorize('VIEW_PRESCRIPTION'), async (req, re
         res.json(prescription);
     } catch (error) {
         res.status(500).json({ error: "Search failed." });
+    }
+});
+
+// 3. Validity Verification (PHARMACIST only)
+app.get('/api/prescriptions/:id/verify', authorize('DISPENSE_PRESCRIPTION'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const prescription = await Prescription.findById(id).populate('medications.medicine');
+        
+        if (!prescription) {
+            return res.status(404).json({ error: "Prescription not found for verification." });
+        }
+
+        const authenticityHandler = new AuthenticityCheckHandler();
+        const fraudHandler = new FraudCheckHandler();
+        const duplicateHandler = new DuplicateCheckHandler();
+
+        authenticityHandler.setNext(fraudHandler).setNext(duplicateHandler);
+
+        const isValid = await authenticityHandler.handle(prescription);
+        if (!isValid) {
+            return res.status(400).json({ error: "Security Verification Failed. This prescription may be fraudulent or already processed." });
+        }
+
+        res.json({ message: "Verification Successful", isValid: true, prescription });
+    } catch (error) {
+        res.status(500).json({ error: "Verification process failed." });
     }
 });
 
@@ -98,52 +113,64 @@ app.get('/api/patients/:patientId/prescriptions', async (req, res) => {
     }
 });
 
-// Seed Medicines for the Prototype
+// 5. Seed Database from JSON Files
 app.get('/api/seed', async (req, res) => {
+    const fs = require('fs');
+    const path = require('path');
     const { Medicine, Prescription } = require('./models/Prescription');
-    await Medicine.deleteMany({});
-    await Prescription.deleteMany({});
-    
-    // Seed Medicines
-    await Medicine.create({ _id: 'MED-001', name: 'Paracetamol 500mg' });
-    await Medicine.create({ _id: 'MED-002', name: 'Amoxicillin 250mg' });
-    await Medicine.create({ _id: 'MED-003', name: 'Ibuprofen 400mg' });
-    await Medicine.create({ _id: 'MED-004', name: 'Cetirizine 10mg' });
-    await Medicine.create({ _id: 'MED-005', name: 'Azithromycin 500mg' });
 
-    // Seed Prescriptions for Testing
-    await Prescription.create({
-        _id: 'RX-VAL-001',
-        patientId: 'PAT-101',
-        doctorId: 'DOC-001',
-        status: 'ACTIVE',
-        medications: [{ medicine: 'MED-001', dosage: '1 tab', frequency: '3 times a day', duration: 5 }]
-    });
-    await Prescription.create({
-        _id: 'RX-VAL-002',
-        patientId: 'PAT-101',
-        doctorId: 'DOC-001',
-        status: 'ACTIVE',
-        medications: [{ medicine: 'MED-002', dosage: '1 cap', frequency: 'Every 8 hours', duration: 7 }]
-    });
-    await Prescription.create({
-        _id: 'RX-BAD-999',
-        patientId: 'PAT-101',
-        doctorId: 'DOC-001',
-        status: 'DISPENSED',
-        medications: [{ medicine: 'MED-003', dosage: '1 tab', frequency: 'Twice daily', duration: 3 }]
-    });
+    try {
+        const medsPath = path.join(__dirname, '../frontend/src/medicine.json');
+        const specsPath = path.join(__dirname, '../frontend/src/prescriptions.json');
 
-    res.json({ message: "Prototype seed successful" });
+        if (!fs.existsSync(medsPath) || !fs.existsSync(specsPath)) {
+            return res.status(404).json({ error: "Source JSON files not found." });
+        }
+
+        const medsData = JSON.parse(fs.readFileSync(medsPath, 'utf8'));
+        const specsData = JSON.parse(fs.readFileSync(specsPath, 'utf8'));
+
+        await Medicine.deleteMany({});
+        await Prescription.deleteMany({});
+
+        // 1. Seed Medicines
+        const insertedMeds = await Medicine.insertMany(medsData);
+
+        // 2. Map & Seed Prescriptions
+        const mappedSpecs = specsData.map(spec => ({
+            _id: spec._id,
+            patientId: spec.patientId,
+            doctorId: 'DOC-001', // Standardized for prototype
+            status: spec.status,
+            createdAt: new Date(spec.date),
+            medications: spec.medications.map(m => {
+                const medRef = medsData.find(med => med.name === m.name);
+                return {
+                    medicine: medRef ? medRef._id : "UNKNOWN",
+                    dosage: m.dosage,
+                    frequency: m.frequency,
+                    duration: m.duration
+                };
+            })
+        }));
+
+        const insertedSpecs = await Prescription.insertMany(mappedSpecs);
+
+        res.json({ 
+            message: "Database seeded successfully from JSON files", 
+            medicinesLoaded: insertedMeds.length,
+            prescriptionsLoaded: insertedSpecs.length
+        });
+    } catch (error) {
+        console.error("Seed Error:", error);
+        res.status(500).json({ error: "Failed to seed from JSON files." });
+    }
 });
 
 const PORT = 5000;
-// mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/prescriptify')
-//     .then(() => {
-//         console.log("Connected to MongoDB");
-//         app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-//     })
-//     .catch(err => console.error("Could not connect to MongoDB", err));
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT} (Using In-Memory Mock DB)`);
-});
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => {
+        console.log("Connected to MongoDB Atlas");
+        app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    })
+    .catch(err => console.error("Could not connect to MongoDB", err));

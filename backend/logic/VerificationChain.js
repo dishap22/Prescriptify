@@ -71,8 +71,9 @@ class DuplicateCheckHandler extends VerificationHandler {
         for (const med of prescriptionData.medications) {
             // 1. Technical Duplicate Check: Same medicine in the last 60 minutes
             const technicalDuplicate = await Prescription.findOne({
+                _id: { $ne: prescriptionData._id },
                 patientId: prescriptionData.patientId,
-                'medications.medicine': med.medicine,
+                'medications.medicine': med.medicine._id || med.medicine,
                 createdAt: { $gte: oneHourAgo },
                 status: { $ne: 'REVOKED' } 
             });
@@ -85,8 +86,9 @@ class DuplicateCheckHandler extends VerificationHandler {
             // 2. Over-Prescription Check: Check if current active prescription duration is still valid
             // we check for ANY active/pending prescription that hasn't "expired" yet based on its duration
             const overlaps = await Prescription.find({
+                _id: { $ne: prescriptionData._id }, // Exclude the current prescription itself
                 patientId: prescriptionData.patientId,
-                'medications.medicine': med.medicine,
+                'medications.medicine': med.medicine._id || med.medicine,
                 status: { $in: ['PENDING', 'ACTIVE'] }
             }).sort({ createdAt: -1 });
 

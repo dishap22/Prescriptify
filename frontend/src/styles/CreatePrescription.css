@@ -20,6 +20,40 @@
   gap: 20px;
 }
 
+/* New Split Input Styles */
+.dosage-inputs, .freq-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dosage-inputs input, .freq-container input {
+  padding: 12px;
+  background: var(--surface-light);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  width: 70px;
+  text-align: center;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.dosage-inputs input:focus, .freq-container input:focus {
+  outline: none;
+  border-color: var(--mauve);
+  box-shadow: 0 0 0 4px rgba(183, 156, 219, 0.1);
+}
+
+.dosage-inputs span {
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.freq-container select {
+  flex: 1;
+}
+
 @media (max-width: 900px) {
   .input-grid { grid-template-columns: 1fr; }
 }
