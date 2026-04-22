@@ -8,6 +8,15 @@
 
 **UI Refactor** split dosage into 3 inputs and frequency into unit-based controls for better UX.
 
-also commented out mongoose connection since i was using mockdb for testing for now
+* Also commented out mongoose connection since i was using mockdb for testing for now
 
+* Migrated to mongodb from mockdb
+
+* Created a separate api for verify prescription and separated it from view
+
+* Seed initial meds and prescriptions by going to ```http://localhost:5000/api/seed```
+
+* Type constraints added to prescription fields
+
+* Some animation to show verification progress added 
 
