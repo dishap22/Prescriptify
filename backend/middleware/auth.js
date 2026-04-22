@@ -12,7 +12,7 @@ const roles = {
         permissions: ['VIEW_PRESCRIPTION', 'DISPENSE_PRESCRIPTION']
     },
     PATIENT: {
-        permissions: ['VIEW_OWN_PRESCRIPTION']
+        permissions: ['VIEW_PRESCRIPTION']
     }
 };
 
