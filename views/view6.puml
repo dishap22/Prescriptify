@@ -1,0 +1,89 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+class User {
+  - String userId
+  - String username
+  - String passwordHash
+  - String email
+  - Role role
+  - LocalDateTime createdAt
+  + boolean hasPermission(Permission p)
+  + String getUserId()
+  + Role getRole()
+}
+
+class Role {
+  - String roleName
+  - List~Permission~ permissions
+  + void addPermission(Permission p)
+  + boolean hasPermission(Permission p)
+  + String getRoleName()
+}
+
+enum Permission {
+  CREATE_PRESCRIPTION
+  VIEW_PRESCRIPTION
+  REVOKE_PRESCRIPTION
+  VERIFY_PRESCRIPTION
+  DISPENSE_PRESCRIPTION
+  VIEW_AUDIT_LOG
+  VIEW_ALL_PRESCRIPTIONS
+  MANAGE_USERS
+  MANAGE_ROLES
+}
+
+class RoleRepository {
+  - Map~RoleType, Role~ predefinedRoles
+  + Role getRole(RoleType type)
+  + void initializeRoles()
+}
+
+enum RoleType {
+  DOCTOR
+  PHARMACIST
+  PATIENT
+  REGULATOR
+  ADMIN
+}
+
+class AuthorizationFilter {
+  - UserService userService
+  + boolean authorize(Request req, Permission required)
+  + void logFailure(Request req, User user)
+}
+
+class UserService {
+  - UserRepository userRepo
+  - JwtTokenProvider tokenProvider
+  + User authenticate(String username, String password)
+  + boolean hasPermission(String userId, Permission p)
+  + void assignRole(String userId, Role role)
+}
+
+' === Relationships ===
+User --> Role : has
+Role --> Permission : contains
+RoleRepository --> RoleType : maps from
+RoleRepository --> Role : creates
+AuthorizationFilter --> UserService : uses
+UserService --> User : manages
+
+note top of AuthorizationFilter
+  Intercepts every request
+  Extracts JWT token
+  Validates permissions before business logic
+  Logs all failures (auditability)
+end note
+
+note top of RoleRepository
+  Pre-configured roles loaded at startup
+  Cached to avoid DB calls per request
+end note
+
+note right of Permission
+  Permissions are granular
+  Composable into roles
+  Follows principle of least privilege
+end note
+@enduml

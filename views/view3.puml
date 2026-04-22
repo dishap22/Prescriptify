@@ -1,0 +1,68 @@
+@startuml
+actor "Pharmacist" as PH
+participant "Verification\nSubsystem" as VS
+participant "Prescription\nStateManager" as PSM
+database "Prescription\nDatabase" as DB
+participant "EventBus" as EB
+participant "Notification\nSubsystem" as NS
+participant "Analytics\nSubsystem" as AS
+
+PH -> VS: verifyPrescription(prescriptionId, pharmacyId)
+activate VS
+
+VS -> VS: validateRequest()
+
+VS -> PSM: getPrescription(prescriptionId)
+activate PSM
+
+PSM -> DB: SELECT * FROM prescriptions\nWHERE id = ? AND version = ?
+activate DB
+DB --> PSM: Prescription (version: 5, state: ACTIVE)
+deactivate DB
+
+PSM --> VS: return Prescription
+deactivate PSM
+
+VS -> VS: check if prescription is ACTIVE\nand not previously dispensed
+
+alt Prescription is Valid
+  VS -> PSM: transitionState(prescriptionId, DISPENSED, version=5)
+  activate PSM
+  
+  PSM -> DB: UPDATE prescriptions\nSET state = 'DISPENSED', version = 6\nWHERE id = ? AND version = 5
+  activate DB
+  
+  alt Version Match (Optimistic Lock Success)
+    DB --> PSM: UPDATE SUCCESS (1 row)
+    deactivate DB
+    
+    PSM -> PSM: applyStateTransition()
+    
+    PSM -> EB: publish(PrescriptionDispensedEvent)
+    activate EB
+    
+    EB -->> NS: async: onPrescriptionDispensed()
+    activate NS
+    NS --> NS: send notification to patient
+    
+    EB -->> AS: async: onPrescriptionDispensed()
+    activate AS
+    AS --> AS: log for fraud detection
+    
+    deactivate EB
+    
+    PSM --> VS: transition SUCCESS
+  else Version Mismatch (Concurrent Update)
+    DB --> PSM: UPDATE FAILED (0 rows)
+    deactivate DB
+    PSM --> VS: transition FAILED (Concurrent Modification)
+  end
+  deactivate PSM
+  
+  VS --> PH: Verification SUCCESS\nPrescription marked as DISPENSED
+else Prescription is Invalid
+  VS --> PH: Verification FAILED\n(Expired/Already Dispensed)
+end
+
+deactivate VS
+@enduml
