@@ -69,3 +69,42 @@ Enables event-driven communication (**ADR 1**) across the platform via a Singlet
 1. `PrescriptionStateManager` persists the built prescription.
 2. `PendingState.onEnter()` is called.
 3. The state broadcasts `PRESCRIPTION_CREATED` to the `EventBus`.
+
+### 3.3 State Transition Logic: Marking as "Used/Dispensed"
+
+We've added the capability to transition a prescription from `PENDING/ACTIVE` to `DISPENSED`.
+
+- **`DispensedState`**: A concrete state implementation that handles the side effects of medication being dispensed (e.g., broadcasting `PRESCRIPTION_DISPENSED` event).
+- **`PrescriptionStateManager.transitionToDispensed()`**: Enforces the business rule that only non-expired, non-revoked prescriptions can be marked as used. This prevents the fraudulent reuse of prescriptions.
+
+### 3.4 Role-Based Access Control (RBAC)
+
+We have implemented a middleware layer to enforce permissions based on user roles:
+
+- **Doctor**: Authorized for `CREATE_PRESCRIPTION`.
+- **Pharmacist**: Authorized for `DISPENSE_PRESCRIPTION`.
+- **Patient**: Authorized to view their own data (to be implemented in Step 4).
+
+Authentication is handled via an `authorize` middleware that validates permissions before the request reaches the domain logic.
+
+## Step 4: API & Frontend Integration
+
+This stage involves exposing the domain logic via a REST API and building the user interface.
+
+### 4.1 Orchestration API (`backend/index.js`)
+
+We have implemented the central API endpoint `POST /api/prescriptions` which acts as the **conductor** for our patterns:
+
+1. **Request Intake**: Receives raw data from the frontend.
+2. **Construction**: Utilizes `PrescriptionBuilder` to standardize the data.
+3. **Validation**: Chains `Authenticity` → `Fraud` → `Duplicate` checks via the `VerificationHandler`.
+4. **Persistence & Lifecycle**: Calls `PrescriptionStateManager` to save the record in a `PENDING` state and broadcast the creation event.
+
+### 4.2 Error Handling & Feedback
+
+The API is designed to catch errors at each stage:
+- Builder errors (missing fields).
+- Verification failures (business rule violations).
+- Database/Concurrency errors (ADR 4).
+
+Messages are returned as standard JSON to allow the React frontend to provide specific feedback to the doctor.

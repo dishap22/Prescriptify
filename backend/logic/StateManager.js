@@ -67,6 +67,24 @@ class PendingState extends PrescriptionState {
 }
 
 /**
+ * Concrete Dispensed State.
+ */
+class DispensedState extends PrescriptionState {
+    constructor() {
+        super('DISPENSED');
+    }
+
+    async onEnter(prescription) {
+        console.log(`Prescription ${prescription._id} entered DISPENSED state.`);
+        // Logic: Clear any pending reminders, mark timestamp, notify patient
+        eventBusInstance.publish('PRESCRIPTION_DISPENSED', { 
+            prescriptionId: prescription._id, 
+            patientId: prescription.patientId 
+        });
+    }
+}
+
+/**
  * PrescriptionStateManager handles all lifecycle transitions.
  * ADR 2: Centralized Prescription Lifecycle Enforcement via State Machine.
  */
@@ -83,7 +101,24 @@ class PrescriptionStateManager {
         return prescription;
     }
 
-    // Future implementation for other state transitions (e.g., transitionTo)
+    static async transitionToDispensed(prescriptionId) {
+        const prescription = await Prescription.findById(prescriptionId);
+        if (!prescription) throw new Error("Prescription not found.");
+        
+        // Lifecycle Rule: Only PENDING or ACTIVE prescriptions can be dispensed
+        if (!['PENDING', 'ACTIVE'].includes(prescription.status)) {
+            throw new Error(`Cannot dispense prescription in ${prescription.status} state.`);
+        }
+
+        const oldStateName = prescription.status;
+        prescription.status = 'DISPENSED';
+        await prescription.save();
+
+        const state = new DispensedState();
+        await state.onEnter(prescription);
+
+        return prescription;
+    }
 }
 
 module.exports = {
