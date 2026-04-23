@@ -39,6 +39,10 @@ Prescriptify is a comprehensive prescription management system designed to strea
     npm run dev # Runs on http://localhost:5173
     ```
 3.  **Data Initialization:**
+    ```bash
+    curl http://localhost:5000/api/seed
+    ```
+    OR <br>
     Visit `http://localhost:5000/api/seed` in your browser to load the medicine database and sample prescriptions.
 
 
