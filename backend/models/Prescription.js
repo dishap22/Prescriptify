@@ -53,15 +53,16 @@ const PrescriptionSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now },
     status: {
         type: String,
-        enum: ['PENDING', 'ACTIVE', 'DISPENSED', 'EXPIRED', 'REVOKED'],
+        enum: ['PENDING', 'ACTIVE', 'DISPENSED', 'EXPIRED', 'REVOKED', 'REJECTED'],
         default: 'PENDING'
     },
+    rejectionReason: { type: String },
     version: { type: Number, default: 1 }, // OCC: Optimistic Concurrency Control
     medications: [MedicationItemSchema]
 }, { timestamps: true });
 
 // Pre-save hook for OCC (Optimistic Concurrency Control) as per ADR 4
-PrescriptionSchema.pre('save', function () {
+PrescriptionSchema.pre('save', async function () {
     this.version += 1;
 });
 
