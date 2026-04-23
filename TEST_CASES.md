@@ -1,10 +1,10 @@
-# 🧪 Prescriptify Test Suite
+#  Prescriptify Test Suite
 
 This document outlines the manual and automated test cases to verify the **MERN** implementation, focused on the architectural design patterns (Chain of Responsibility, State, Observer, Builder).
 
 ---
 
-## 🛠️ Prerequisites & Setup
+##  Prerequisites & Setup
 
 1.  **Backend**: `cd backend && npm run dev` (Ensure `.env` is configured).
 2.  **Frontend**: `cd frontend && npm run dev`.
@@ -12,7 +12,7 @@ This document outlines the manual and automated test cases to verify the **MERN*
 
 ---
 
-## 🏃 Test Plan
+##  Test Plan
 
 ### 1. User Authentication (RBAC)
 **Goal**: Verify roles can only access their respective dashboards.
@@ -28,8 +28,9 @@ This document outlines the manual and automated test cases to verify the **MERN*
 
 ### 3. Verification & Dispensing (State & Observer)
 **Goal**: Verify the Pharmacist can transition the state of a prescription.
+- [ ] **TC-3.0**: First copy one of the prescription IDs to be verified (e.g., `RX-VAL-001`).
 - [ ] **TC-3.1**: Log in as Pharmacist.
-- [ ] **TC-3.2**: Go to "Verify Prescriptions" and enter `RX-VAL-001`.
+- [ ] **TC-3.2**: Go to "Verify Prescriptions" and enter the copied ID (e.g., `RX-VAL-001`).
 - [ ] **TC-3.3**: Click **"Verify Authenticity"**. Status should stay `PENDING`.
 - [ ] **TC-3.4**: Click **"Dispense"**.
     - *Expected Result*: Status changes to `DISPENSED`. Check the **Backend Terminal** for a log message: `[Notification Service] Prescription RX-VAL-001 has been dispensed...` (Observer Pattern).
@@ -42,15 +43,5 @@ This document outlines the manual and automated test cases to verify the **MERN*
 
 ---
 
-## 🤖 Automated Integration Testing
-If you have Python installed, you can run the full workflow automatically:
 
-```bash
-python3 test_integration.py
-```
 
-This script performs:
-1. `POST /api/auth/login` (Admin/Doctor/Pharmacist)
-2. `POST /api/prescriptions` (Builder + Chain)
-3. `GET /api/prescriptions/:id/verify` (Logic Gate)
-4. `PATCH /api/prescriptions/:id/dispense` (State + Observer)

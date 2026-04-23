@@ -35,6 +35,10 @@ https://docs.google.com/document/d/19xW4LnH3X6CiZDv5VFJRQdYMrVu5Z8vqcndWgWpJIi8/
     npm run dev # Runs on http://localhost:5173
     ```
 3.  **Data Initialization:**
+    ```bash
+    curl http://localhost:5000/api/seed
+    ```
+    <br>OR <br>
     Visit `http://localhost:5000/api/seed` in your browser to load the medicine database and sample prescriptions.
 
 
