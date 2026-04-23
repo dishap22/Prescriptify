@@ -51,5 +51,6 @@ Prescriptify is a comprehensive prescription management system designed to strea
 - **Patient Dashboard**: Displays active/past prescriptions. Click "View Details" to see the QR code for the pharmacist.
 - **Doctor Console**: A simple form to issue new prescriptions. It automatically checks for duplicates via the Logic Chain.
 - **Pharmacist Portal**: Go to "Verify Prescriptions" to enter an ID (e.g., RX-VAL-001). Once verified, toggle the "Dispense" button to finalize. A terminal log in the backend will simulate the notification service.
+- The passwords for all the pre-seeded users is `Pass`.
 
 For deep technical details on design patterns, see [Doc.md](Doc.md).
