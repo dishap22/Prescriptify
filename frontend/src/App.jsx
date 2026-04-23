@@ -12,7 +12,7 @@ import Sidebar from './components/Sidebar';
 
 // Pages
 import HomePage from './pages/HomePage';
-import AuthPage from './pages/AuthPage';
+import LoginPage from './pages/LoginPage';
 import CreatePrescription from './pages/CreatePrescription';
 import VerifyPrescription from './pages/VerifyPrescription';
 import ActivePrescriptions from './pages/ActivePrescriptions';
@@ -25,6 +25,15 @@ const API = axios.create({
   baseURL: 'http://localhost:5000/api'
 });
 
+// Add logic to include JWT in all requests
+API.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 const ROLES = {
   DOCTOR: 'DOCTOR',
   PHARMACIST: 'PHARMACIST',
@@ -32,7 +41,22 @@ const ROLES = {
 };
 
 function App() {
-  const [role, setRole] = useState(null);
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('user');
+    try {
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+  const [role, setRole] = useState(() => {
+    const saved = localStorage.getItem('user');
+    try {
+      return saved ? JSON.parse(saved).role : null;
+    } catch (e) {
+      return null;
+    }
+  });
   const [activeTab, setActiveTab] = useState('action');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -65,11 +89,11 @@ function App() {
     try {
       const res = await API.post('/prescriptions', {
         patientId,
-        doctorId: 'DOC-001',
+        doctorId: user?.userId || 'DOC-001',
         medications: [{ medicine: selectedMed, dosage: dosageVal, frequency: freqVal, duration: durNum }]
-      }, { headers: { 'x-user-role': ROLES.DOCTOR } });
+      }, { headers: { 'x-user-role': role } });
       
-      showMsg("Prescription issued successfully! ID: " + res.data.id, "success");
+      showMsg("Prescription issued successfully! ID: " + res.data.prescriptionId, "success");
       setPatientId('');
     } catch (err) {
       showMsg(err.response?.data?.error || "Failed to issue prescription", "error");
@@ -82,15 +106,17 @@ function App() {
     if (!id) return;
     setLoading(true);
     try {
-      const res = await API.get(`/prescriptions/${id}/verify`, { 
-        headers: { 'x-user-role': ROLES.PHARMACIST } 
-      });
-      // Backend returns { prescription: ... } for /verify
-      setFoundPrescription(res.data.prescription);
-      showMsg("Prescription verified and authentic.", "success");
+      const headers = { 'x-user-role': role };
+      // Identity for RBAC ownership check
+      if (role === ROLES.PATIENT) headers['x-patient-id'] = user?.userId || 'PAT-101';
+      
+      const res = await API.get(`/prescriptions/${id}/verify`, { headers });
+      setFoundPrescription(res.data.prescription || res.data);
     } catch (err) {
-      showMsg(err.response?.data?.error || "Security Verification Failed.", "error");
-      setFoundPrescription(null);
+      console.error("Verification failed:", err.response?.data);
+      showMsg(err.response?.data?.error || "Prescription verification failed.", "error");
+      // Set to null or a special error state so the UI updates
+      setFoundPrescription({ error: err.response?.data?.error || "Verification failed." });
     } finally {
       setLoading(false);
     }
@@ -100,7 +126,7 @@ function App() {
     setLoading(true);
     try {
       await API.patch(`/prescriptions/${id}/dispense`, {}, {
-        headers: { 'x-user-role': ROLES.PHARMACIST }
+        headers: { 'x-user-role': role }
       });
       showMsg("Medication dispensed successfully!", "success");
       handleVerify(id); 
@@ -115,6 +141,7 @@ function App() {
     <Router>
       <div className="app-wrapper">
         <Navbar 
+          setUser={setUser}
           setRole={setRole} 
           setFoundPrescription={setFoundPrescription}
           setActiveTab={setActiveTab}
@@ -132,10 +159,10 @@ function App() {
         <main className="main-content">
           <Routes>
             <Route path="/" element={<HomePage setRole={setRole} ROLES={ROLES} />} />
-            <Route path="/auth" element={<AuthPage setRole={setRole} ROLES={ROLES} />} />
+            <Route path="/auth" element={<LoginPage setUser={setUser} setRole={setRole} ROLES={ROLES} />} />
             
             <Route path="/dashboard" element={
-              role ? (
+              user ? (
                 <div className="container dashboard-container">
                   <Sidebar role={role} ROLES={ROLES} activeTab={activeTab} setActiveTab={setActiveTab} />
                   <section className="view-content">
@@ -153,7 +180,7 @@ function App() {
                         handleVerify={handleVerify} handleDispense={handleDispense} loading={loading}
                       />
                     )}
-                    {role === ROLES.PATIENT && <ActivePrescriptions />}
+                    {role === ROLES.PATIENT && <ActivePrescriptions patientId={user?.userId} handleVerify={handleVerify} />}
                   </section>
                 </div>
               ) : <Navigate to="/auth" />

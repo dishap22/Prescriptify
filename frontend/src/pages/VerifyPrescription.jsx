@@ -27,6 +27,8 @@ const VerifyPrescription = ({ searchId, setSearchId, foundPrescription, handleVe
     setVerifying(false);
   };
 
+  const errorMessage = foundPrescription?.isValid === false ? "Verification Failed: Duplicate or Fraudulent pattern detected." : null;
+
   return (
     <div className="dashboard-content animate-fade-in">
       <div className="d-header">
@@ -70,55 +72,62 @@ const VerifyPrescription = ({ searchId, setSearchId, foundPrescription, handleVe
 
       {foundPrescription && !verifying && (
         <div className="prescription-result animate-slide-up">
-          <div className="result-card glass">
-            <div className="card-badge success">
-              <ShieldCheck size={16} /> Certified Authentic
-            </div>
-            
-            <div className="res-header">
-              <h3>{foundPrescription._id}</h3>
-              <div className={`status-pill ${foundPrescription.status.toLowerCase()}`}>
-                {foundPrescription.status}
+           {/* If the backend returned an internal error state in the body */}
+           {foundPrescription.error ? (
+              <div className="alert-box glass error text-center">
+                 <AlertCircle size={18} /> {foundPrescription.error}
               </div>
-            </div>
-
-            <div className="res-meta">
-               <div className="meta-box">
-                 <label>PATIENT</label>
-                 <p>{foundPrescription.patientId}</p>
+           ) : (
+             <div className="result-card glass">
+               <div className="card-badge success">
+                 <ShieldCheck size={16} /> Certified Authentic
                </div>
-               <div className="meta-box">
-                 <label>ISSUED BY</label>
-                 <p>{foundPrescription.doctorId || "Certified Physician"}</p>
+               
+               <div className="res-header">
+                 <h3>{foundPrescription._id}</h3>
+                 <div className={`status-pill ${foundPrescription.status.toLowerCase()}`}>
+                   {foundPrescription.status}
+                 </div>
                </div>
-            </div>
 
-            <div className="meds-table">
-              {foundPrescription.medications.map((m, i) => (
-                <div key={i} className="med-row">
-                  <div className="med-info">
-                    <strong>{m.medicine.name || m.medicine}</strong>
-                    <span>{m.dosage} • {m.frequency}</span>
+               <div className="res-meta">
+                  <div className="meta-box">
+                    <label>PATIENT</label>
+                    <p>{foundPrescription.patientId}</p>
                   </div>
-                  <div className="med-dur">{m.duration} Days</div>
-                </div>
-              ))}
-            </div>
+                  <div className="meta-box">
+                    <label>ISSUED BY</label>
+                    <p>{foundPrescription.doctorId || "Certified Physician"}</p>
+                  </div>
+               </div>
 
-            {foundPrescription.status === 'ACTIVE' || foundPrescription.status === 'PENDING' ? (
-              <button 
-                className="btn btn-primary w-full dispense-btn" 
-                onClick={() => handleDispense(foundPrescription._id)}
-                disabled={loading}
-              >
-                {loading ? <Loader2 className="animate-spin" /> : <><Zap size={18} /> Confirm Dispensing</>}
-              </button>
-            ) : (
-              <div className="alert-box glass warning text-center">
-                 <AlertCircle size={18} /> This prescription has already been dispensed.
-              </div>
-            )}
-          </div>
+               <div className="meds-table">
+                 {foundPrescription.medications && foundPrescription.medications.map((m, i) => (
+                   <div key={i} className="med-row">
+                     <div className="med-info">
+                       <strong>{(m.medicine && m.medicine.name) || m.medicine}</strong>
+                       <span>{m.dosage} • {m.frequency}</span>
+                     </div>
+                     <div className="med-dur">{m.duration} Days</div>
+                   </div>
+                 ))}
+               </div>
+
+               {foundPrescription.status === 'ACTIVE' || foundPrescription.status === 'PENDING' ? (
+                 <button 
+                   className="btn btn-primary w-full dispense-btn" 
+                   onClick={() => handleDispense(foundPrescription._id)}
+                   disabled={loading}
+                 >
+                   {loading ? <Loader2 className="animate-spin" /> : <><Zap size={18} /> Confirm Dispensing</>}
+                 </button>
+               ) : (
+                 <div className="alert-box glass warning text-center">
+                    <AlertCircle size={18} /> This prescription has already been processed.
+                 </div>
+               )}
+             </div>
+           )}
         </div>
       )}
     </div>

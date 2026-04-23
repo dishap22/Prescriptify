@@ -14,11 +14,6 @@ const CreatePrescription = ({
   const [freqValue, setFreqValue] = useState(3);
   const [duration, setDuration] = useState(7);
 
-  // Hardcode patient for prototype
-  useEffect(() => {
-    setPatientId('PAT-101');
-  }, [setPatientId]);
-
   const onSubmit = (e) => {
     e.preventDefault();
     // Simplified formats
@@ -38,8 +33,15 @@ const CreatePrescription = ({
         <div className="form-section">
           <h4>Patient Identification</h4>
           <div className="input-group">
-            <label>Patient ID (Prototype Default)</label>
-            <input type="text" className="input-field disabled" value={patientId} readOnly />
+            <label>Patient ID</label>
+            <input 
+              type="text" 
+              className="input-field" 
+              value={patientId} 
+              onChange={(e) => setPatientId(e.target.value)} 
+              placeholder="e.g. PAT-101"
+              required
+            />
           </div>
         </div>
 

@@ -42,6 +42,28 @@
   color: var(--mauve-deep);
 }
 
+.user-greeting {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.5);
+  padding: 6px 16px;
+  border-radius: 100px;
+  border: 1px solid rgba(157, 120, 206, 0.2);
+  margin-right: 12px;
+}
+
+.greeting-label {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.greeting-name {
+  color: var(--mauve-deep);
+  font-weight: 600;
+  font-size: 14px;
+}
+
 .nav-links {
   display: flex;
   gap: 32px;

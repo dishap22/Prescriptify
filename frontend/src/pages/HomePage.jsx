@@ -1,9 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Home.css';
 
 const HomePage = ({ setRole, ROLES }) => {
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      navigate('/dashboard');
+    }
+  }, [navigate]);
   
   return (
     <section className="hero-section container animate-fade-in">

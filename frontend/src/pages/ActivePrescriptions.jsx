@@ -4,15 +4,18 @@ import '../styles/Common.css';
 import '../styles/ActivePrescriptions.css';
 import { Pill, Clock, User as UserIcon, Loader2, RefreshCw } from 'lucide-react';
 
-const ActivePrescriptions = () => {
+const ActivePrescriptions = ({ patientId }) => {
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchMyPrescriptions = async () => {
+    if (!patientId) return;
     setLoading(true);
     try {
-      // In a real app, PAT-101 would come from auth context
-      const res = await axios.get('http://localhost:5000/api/patients/PAT-101/prescriptions');
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`http://localhost:5000/api/patients/${patientId}/prescriptions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setPrescriptions(res.data);
     } catch (err) {
       console.error("Failed to fetch prescriptions");
@@ -23,7 +26,7 @@ const ActivePrescriptions = () => {
 
   useEffect(() => {
     fetchMyPrescriptions();
-  }, []);
+  }, [patientId]);
 
   return (
     <div className="dashboard-content animate-fade-in">
@@ -69,8 +72,9 @@ const ActivePrescriptions = () => {
                     </div>
                     <div className="med-details">
                       <div className="med-name">
-                        {/* Support both populated and unpopulated medicine IDs */}
-                        {med.medicine.name || med.medicine} <span className="med-dose">{med.dosage}</span>
+                        {/* Display populated name, string property, or fallback */}
+                        {med.medicine?.name || (typeof med.medicine === 'string' ? med.medicine : 'Unknown Medicine')} 
+                        <span className="med-dose">{med.dosage}</span>
                       </div>
                       <div className="med-instructions">{med.frequency} • {med.duration} days</div>
                     </div>
