@@ -81,11 +81,11 @@ We've added the capability to transition a prescription from `PENDING/ACTIVE` to
 
 We have implemented a middleware layer to enforce permissions based on user roles:
 
-- **Doctor**: Authorized for `CREATE_PRESCRIPTION`.
-- **Pharmacist**: Authorized for `DISPENSE_PRESCRIPTION`.
-- **Patient**: Authorized to view their own data (to be implemented in Step 4).
+- **Doctor**: Authorized for `CREATE_PRESCRIPTION` and general `VIEW_PRESCRIPTION`.
+- **Pharmacist**: Authorized for `DISPENSE_PRESCRIPTION` and general `VIEW_PRESCRIPTION`.
+- **Patient**: Authorized only for `VIEW_OWN_PRESCRIPTION`. This logic is enforced at the controller level to verify that the `patientId` on the prescription matches the identity of the requester.
 
-Authentication is handled via an `authorize` middleware that validates permissions before the request reaches the domain logic.
+Authentication is handled via an `authorize` middleware that validates base permissions, while cross-object ownership (Patients) is handled in the application logic.
 
 ## Step 4: API & Frontend Integration
 
@@ -107,4 +107,52 @@ The API is designed to catch errors at each stage:
 - Verification failures (business rule violations).
 - Database/Concurrency errors (ADR 4).
 
-Messages are returned as standard JSON to allow the React frontend to provide specific feedback to the doctor.
+## Step 5: Frontend Integration & RBAC Security Refinement
+
+### 5.1 Frontend Development (Mocked Scaffolding)
+A React-based frontend has been integrated to demonstrate the system's core capabilities. This covers:
+- **Doctor's Console**: Issues prescriptions via the `PrescriptionBuilder` logic.
+- **Pharmacist's Panel**: Searches for prescriptions by ID and transitions them to the `DISPENSED` state.
+- **Patient's View**: Securely lists their own medical history.
+
+*Note: The frontend was scaffolded in `frontend/` as part of a collaborative effort to visualize the MERN prototype.*
+
+### 5.2 Granular RBAC & Data Ownership
+To satisfy the "Strategic Perspective" (HIPAA-like privacy), the security model has been refined to enforce **Data Ownership**:
+- **Permission Mapping**: `PATIENT` role is restricted to a specific `VIEW_OWN_PRESCRIPTION` permission.
+- **Ownership Verification**: The `GET /api/prescriptions/:id` endpoint now compares the `patientId` field in the record against the `x-patient-id` header provided by the client.
+- **Header-Based Role Simulation**: Role-based access is controlled by the `x-user-role` header to support rapid prototyping and testing.
+
+## Step 6: Event Listeners (Observer Pattern Implementation)
+
+### 6.1 Decoupled Core Services
+To maintain high maintainability and scalability, we have implemented concrete **Observers** that listen to the `EventBus`:
+- **NotificationListener**: Intercepts `PRESCRIPTION_CREATED` and `PRESCRIPTION_STATUS_CHANGED` to simulate sending automated emails/SMS to patients.
+- **AuditLogListener**: A compliance-focused observer that records every system event (using wildcard `*` matching) for HIPAA auditing.
+
+### 6.2 Key Benefit: "Open-Closed" Principle
+By using the Observer pattern, we can add new post-processing tasks (like `AnalyticsListener` or `InsuranceVerificationListener`) without modifying the core `StateManager` or API controllers.
+
+## Step 7: Compliance Audit (REJECTED State) & System Robustness
+
+### 7.1 "Broken" Prescription Tracking
+To meet full medical auditing standards, we implemented a `REJECTED` state.
+- **Logic**: If the `VerificationChain` fails (e.g., duplicate detected), the system now creates a record with `status: REJECTED` and stores the `rejectionReason`.
+- **Observer Integration**: The `NotificationListener` broadcasts an alert to the prescribing doctor whenever a rejection occurs.
+
+### 7.2 EventBus & Singleton Resilience
+The `EventBus` (ADR 1) was refined during dry-run testing to support higher robustness:
+- **Wildcard Support**: Implemented wildcard `*` event propagation, allowing the `AuditLogListener` to capture every transition.
+- **Dual-Mode Listeners**: Supports both simple callback functions and structured objects with `.update()` methods, ensuring flexible service integration.
+
+### 7.3 Final Prototype Lifecycle Verified
+1. **User Auth**: Roles/Permissions mapping in `auth.js`.
+2. **Builder**: Creation flow via `PrescriptionBuilder.js`.
+3. **Verification**: Business rule checks via the CoR `VerificationChain.js`.
+4. **Audit Persistence**: Failed checks are recorded in the `REJECTED` state.
+5. **State Life-cycle**: Successful checks transition from `PENDING` to `DISPENSED` via the `PrescriptionStateManager.js`.
+6. **Decoupled Responses**: `EventBus` broadcasts changes to the `NotificationListener` and `AuditLogListener`.
+
+## Step 8: Deployment & Environment Readiness
+- **Dependency Management**: Standard MERN backend dependencies (`mongoose`, `express`, `cors`) were integrated.
+- **Dry-Run Validation**: The entire logic layer was verified using a mocked database environment, confirming that the internal design patterns work in unison without side effects.

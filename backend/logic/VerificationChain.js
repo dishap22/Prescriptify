@@ -64,47 +64,67 @@ const { Prescription } = require('../models/Prescription');
 
 class DuplicateCheckHandler extends VerificationHandler {
     async verify(prescriptionData) {
-        console.log("Duplicate Check: Searching for identical prescriptions...");
+        console.log(`[Duplicate Check] Starting check for Prescription: ${prescriptionData._id}`);
         
-        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        try {
+            const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
-        for (const med of prescriptionData.medications) {
-            // 1. Technical Duplicate Check: Same medicine in the last 60 minutes
-            const technicalDuplicate = await Prescription.findOne({
-                _id: { $ne: prescriptionData._id },
-                patientId: prescriptionData.patientId,
-                'medications.medicine': med.medicine._id || med.medicine,
-                createdAt: { $gte: oneHourAgo },
-                status: { $ne: 'REVOKED' } 
-            });
+            for (const med of prescriptionData.medications) {
+                // Ensure we have a valid medicine ID string
+                const rawMedId = med.medicine?._id || med.medicine;
+                if (!rawMedId) {
+                    console.log("[Duplicate Check] Skipping medication with no ID (invalid data).");
+                    continue;
+                }
+                const medId = rawMedId.toString();
+                
+                // Ensure current prescription ID is a string for comparison
+                const currentPxId = prescriptionData._id ? prescriptionData._id.toString() : null;
+                
+                // 1. Technical Duplicate Check
+                const technicalDuplicate = await Prescription.findOne({
+                    _id: { $ne: currentPxId },
+                    patientId: prescriptionData.patientId,
+                    'medications.medicine': medId,
+                    createdAt: { $gte: oneHourAgo },
+                    status: { $ne: 'REVOKED' } 
+                }).exec();
 
-            if (technicalDuplicate) {
-                console.log(`Duplicate Check Failed: Double-submission detected for medicine ${med.medicine}.`);
-                return false;
-            }
+                if (technicalDuplicate) {
+                    console.log(`[Duplicate Check] FAILED: Double-submission for medicine ${medId}. Recent match: ${technicalDuplicate._id}`);
+                    return false;
+                }
 
-            // 2. Over-Prescription Check: Check if current active prescription duration is still valid
-            // we check for ANY active/pending prescription that hasn't "expired" yet based on its duration
-            const overlaps = await Prescription.find({
-                _id: { $ne: prescriptionData._id }, // Exclude the current prescription itself
-                patientId: prescriptionData.patientId,
-                'medications.medicine': med.medicine._id || med.medicine,
-                status: { $in: ['PENDING', 'ACTIVE'] }
-            }).sort({ createdAt: -1 });
+                // 2. Over-Prescription Check
+                const overlaps = await Prescription.find({
+                    _id: { $ne: currentPxId },
+                    patientId: prescriptionData.patientId,
+                    'medications.medicine': medId,
+                    status: { $in: ['PENDING', 'ACTIVE'] }
+                }).sort({ createdAt: -1 }).exec();
 
-            for (const prev of overlaps) {
-                const prevMed = prev.medications.find(m => m.medicine.toString() === med.medicine.toString());
-                if (prevMed) {
-                    const daysSinceCreation = (Date.now() - prev.createdAt.getTime()) / (1000 * 3600 * 24);
-                    // If the previous prescription was for 30 days and only 15 have passed, flag it
-                    if (daysSinceCreation < prevMed.duration) {
-                        console.log(`Duplicate Check Failed: Over-prescription detected. Patient still has ${Math.ceil(prevMed.duration - daysSinceCreation)} days of supply remaining for medicine ${med.medicine}.`);
-                        return false;
+                for (const prev of overlaps) {
+                    const prevMed = prev.medications.find(m => 
+                        (m.medicine?._id || m.medicine || "").toString() === medId
+                    );
+                    
+                    if (prevMed) {
+                        const createdAt = prev.createdAt ? new Date(prev.createdAt) : new Date();
+                        const daysSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 3600 * 24);
+                        if (daysSinceCreation < prevMed.duration) {
+                            console.log(`[Duplicate Check] FAILED: Over-prescription for ${medId}. Still has ${Math.ceil(prevMed.duration - daysSinceCreation)} days supply from Prescription ${prev._id}.`);
+                            return false;
+                        }
                     }
                 }
             }
+            
+            console.log("[Duplicate Check] PASSED.");
+            return true;
+        } catch (error) {
+            console.error("[Duplicate Check] CRITICAL ERROR:", error);
+            return false;
         }
-        return true;
     }
 }
 

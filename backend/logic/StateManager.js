@@ -24,11 +24,21 @@ class EventBus {
         if (this.listeners[eventType]) {
             this.listeners[eventType].forEach(listener => {
                 try {
-                    listener.update(data);
+                    // Check if listener is a function or an object with an update method
+                    if (typeof listener === 'function') {
+                        listener(data, eventType);
+                    } else if (listener && typeof listener.update === 'function') {
+                        listener.update(data);
+                    }
                 } catch (err) {
                     console.error(`Error in event listener for ${eventType}:`, err);
                 }
             });
+        }
+        
+        // Handle wildcard subscribers
+        if (eventType !== '*' && this.listeners['*']) {
+            this.publish('*', data);
         }
     }
 }
@@ -85,17 +95,51 @@ class DispensedState extends PrescriptionState {
 }
 
 /**
+ * Concrete Rejected State.
+ */
+class RejectedState extends PrescriptionState {
+    constructor() {
+        super('REJECTED');
+    }
+
+    async onEnter(prescription) {
+        console.log(`Prescription ${prescription._id} entered REJECTED state: ${prescription.rejectionReason}`);
+        eventBusInstance.publish('PRESCRIPTION_REJECTED', { 
+            prescriptionId: prescription._id, 
+            patientId: prescription.patientId,
+            reason: prescription.rejectionReason
+        });
+    }
+}
+
+/**
  * PrescriptionStateManager handles all lifecycle transitions.
  * ADR 2: Centralized Prescription Lifecycle Enforcement via State Machine.
  */
 class PrescriptionStateManager {
     static async setInitialState(prescriptionData) {
+        // Generate a random ID if not provided (for manually created via builder)
+        if (!prescriptionData._id) {
+            prescriptionData._id = "RX-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+        }
         const prescription = new Prescription(prescriptionData);
         // Ensure initial state is PENDING
         prescription.status = 'PENDING';
         await prescription.save();
         
         const state = new PendingState();
+        await state.onEnter(prescription);
+        
+        return prescription;
+    }
+
+    static async recordRejection(prescriptionData, reason) {
+        const prescription = new Prescription(prescriptionData);
+        prescription.status = 'REJECTED';
+        prescription.rejectionReason = reason;
+        await prescription.save();
+        
+        const state = new RejectedState();
         await state.onEnter(prescription);
         
         return prescription;
@@ -125,3 +169,4 @@ module.exports = {
     EventBus: eventBusInstance,
     PrescriptionStateManager
 };
+
