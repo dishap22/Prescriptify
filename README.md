@@ -14,7 +14,11 @@ https://docs.google.com/document/d/19xW4LnH3X6CiZDv5VFJRQdYMrVu5Z8vqcndWgWpJIi8/
 
 ---
 
-##  Getting Started & UI Navigation
+## Project Overview
+
+Prescriptify is a comprehensive prescription management system designed to streamline the creation, validation, and lifecycle management of medical prescriptions. The system ensures a structured sequence of validation before prescriptions become active, providing a centralized repository accessible to authorized stakeholders (Doctors, Pharmacists, and Patients). Key features include robust fraud and duplicate detection, event-driven notifications, scheduling for medication reminders, and strict role-based access control to protect sensitive health data.
+
+## Getting Started & UI Navigation
 
 ### 1. Setup & Installation
 
@@ -24,9 +28,9 @@ https://docs.google.com/document/d/19xW4LnH3X6CiZDv5VFJRQdYMrVu5Z8vqcndWgWpJIi8/
     ```bash
     cd backend
     npm install
-    # Create .env in the root directory with MONGODB_URI, 
+    # Create .env in the root directory with MONGODB_URI
     npm run dev
-    # PS : DO NOT create `.env` in backend folder. It should be in the root directory. The backend will automatically load it.
+    # PS : DO NOT create `.env` in the backend folder. It should be in the root directory. The backend will automatically load it.
     ```
 2.  **Frontend Setup:**
     ```bash
@@ -44,8 +48,8 @@ https://docs.google.com/document/d/19xW4LnH3X6CiZDv5VFJRQdYMrVu5Z8vqcndWgWpJIi8/
 
 ### 2. Navigation Guide
 
-- **Patient Dashboard**: Displays active/past prescriptions. Click **"View Details"** to see the QR code for the pharmacist.
-- **Doctor Console**: A simple form to issue new prescriptions. It automatically checks for duplicates via the **Logic Chain**.
-- **Pharmacist Portal**: Go to **"Verify Prescriptions"** to enter an ID (e.g., `RX-VAL-001`). Once verified, toggle the **"Dispense"** button to finalize. A terminal log in the backend will simulate the notification service.
+- **Patient Dashboard**: Displays active/past prescriptions. Click "View Details" to see the QR code for the pharmacist.
+- **Doctor Console**: A simple form to issue new prescriptions. It automatically checks for duplicates via the Logic Chain.
+- **Pharmacist Portal**: Go to "Verify Prescriptions" to enter an ID (e.g., RX-VAL-001). Once verified, toggle the "Dispense" button to finalize. A terminal log in the backend will simulate the notification service.
 
 For deep technical details on design patterns, see [Doc.md](Doc.md).
