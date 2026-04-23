@@ -64,11 +64,13 @@ Enables event-driven communication (**ADR 1**) across the platform via a Singlet
 
 - **`EventBus` (Singleton Pattern)**: A centralized messaging hub where different parts of the platform (like notifications or analytics) can subscribe to events.
 - **Decoupling**: The main prescription creation process doesn't wait for secondary actions. `PendingState` simply publishes a `PRESCRIPTION_CREATED` event, allowing listeners like a `NotificationListener` to handle those tasks asynchronously.
+- **Compliance Monitoring (REJECTED State)**: A new `REJECTED` state has been added to the hierarchy. If a prescription fails any part of the `Verification Chain`, the system now explicitly persists the rejection to the database. This ensures a transparent audit trail of why a request was denied.
 
 #### Key Operations:
 1. `PrescriptionStateManager` persists the built prescription.
 2. `PendingState.onEnter()` is called.
 3. The state broadcasts `PRESCRIPTION_CREATED` to the `EventBus`.
+4. If verification fails, `PrescriptionStateManager.recordRejection()` is called, shifting the entity to a `REJECTED` state and broadcasting an audit event.
 
 ### 3.3 State Transition Logic: Marking as "Used/Dispensed"
 
@@ -155,4 +157,63 @@ The `EventBus` (ADR 1) was refined during dry-run testing to support higher robu
 
 ## Step 8: Deployment & Environment Readiness
 - **Dependency Management**: Standard MERN backend dependencies (`mongoose`, `express`, `cors`) were integrated.
+
+### 8.1 API & Environment Orchestration
+- **Universal Configuration**: The system has been updated to use a centralized `.env` file at the project root. This ensures that the Backend, Seeding Utilities, and any future services share a single source of truth for the `MONGODB_URI` and `JWT_SECRET`.
+- **Axios Interceptors**: The React frontend uses interceptors to automatically secure all outgoing requests with the current session's JWT, facilitating a seamless transition between Auth and Action states.
+
+### 8.2 User Authentication & Session Persistence
+- **JWT Authentication (ADR 6)**: Implemented a robust `User` model with secure `bcrypt` hashing. The system now supports role-based accounts:
+  - **DOCTOR**: (ID: `DOC-XX`)
+  - **PHARMACIST**: (ID: `PHAR-XX`)
+  - **PATIENT**: (ID: `PAT-XX`)
+- **Session Management**: Login tokens expire after 1 hour, following industry-standard security protocols for medical data systems.
+
+### 8.3 Automated Seeding Utility (`backend/seed_db.py`)
+To accelerate testing and ensure a populated environment for the prototype:
+- **Python Seeding**: A dedicated script generates a varied dataset including 10+ standard medications and a baseline of sample prescriptions.
+- **Pattern Alignment**: The script bypasses the Builder but explicitly enforces the `version` (ADR 4) and `status` (ADR 2) fields, ensuring the database is in a valid state for the platform to manage.
+
 - **Dry-Run Validation**: The entire logic layer was verified using a mocked database environment, confirming that the internal design patterns work in unison without side effects.
+
+## Step 9: Stability & Data Integrity Fixes
+
+### 9.1 Mongoose Middleware Refactor
+Resolved a critical `TypeError: next is not a function` bug by transitioning Mongoose pre-save hooks (used for password hashing and OCC versioning) to standard `async/await` patterns. This modernization prevents middleware execution crashes during registration and updates.
+
+### 9.2 Data Population & Defensive Rendering
+- **Backend Schema Population**: Fixed an issue in the Prescription history and verification endpoints where medicine details weren't being correctly returned. Added `.populate('medications.medicine')` to ensuring the UI and the Duplicate Check logic receive full medicine objects.
+- **Frontend Safety**: Implemented defensive null-checks in `ActivePrescriptions.jsx` to prevent the `TypeError` crash when medication data is partially missing.
+
+### 9.3 Frontend Routing & State Resilience
+- **Persistent Sessions**: Refactored the React `App.jsx` to initialize user state directly from `localStorage`, preventing data loss on page refreshes.
+- **Robust Logout Flow**: Implemented a forced `window.location.href` refresh upon logout to ensure all sensitive cryptographic tokens and role-based states are fully purged from the application instance.
+
+## Step 10: Security Chain & Verification Refinement
+
+### 10.1 Chain of Responsibility Synchronization
+- **Logic Correction**: Fixed a bug where the `handleVerify` frontend function was calling the generic "View" endpoint instead of the "Security Verification" endpoint. This ensures that the `Authenticity`, `Fraud`, and `Duplicate` check handlers are actually executed by the pharmacist.
+- **ID Normalization**: Updated the `DuplicateCheckHandler` to normalize ObjectIDs to strings using `.toString()`. This prevents comparison failures when the database returns a BSON ObjectID while the logic expects a string.
+
+### 10.2 Prototype Notification Simulation
+- **Observer Integration**: Verified and synchronized the `NotificationListener`. In this prototype, the service identifies `PRESCRIPTION_CREATED` and `PRESCRIPTION_DISPENSED` events.
+- **Console Simulation (Design Pattern Focus)**: While real email/SMS transmission is simulated via console output (`[Notification Service] `), the implementation strictly adheres to the **Observer Pattern**. This allows the core state-management logic to remain entirely agnostic of notification protocols, satisfying the **Interface Segregation** and **Dependency Inversion** principles.
+- **Pluggable Architecture**: The use of a centralized `EventBus` ensures that replacing this placeholder with a real service (e.g., SendGrid, Twilio, or AWS SNS) requires zero changes to the `PrescriptionStateManager` or DB models.
+
+## Step 11: Architectural Decoupling & placeholder Philosophy
+
+### 11.1 The "Pluggable" Service Design
+Throughout this prototype, several complex external integrations are represented by placeholders. However, these are not mere stubs; they are implemented using advanced design patterns that ensure the system is **Product Ready** from an architectural standpoint:
+
+- **Notification Engine (Observer Pattern)**: 
+    - *Placeholders*: Console logs for Email/SMS.
+    - *Architecture*: The system avoids "Hard-Coding" notification logic. By using the `EventBus` (Observer Pattern), we've decoupled the **Trigger** (State Change) from the **Action** (Notification). This ensures the core medical logic is never "polluted" by third-party API dependencies.
+- **Identity Verification (Chain of Responsibility)**:
+    - *Placeholders*: Basic presence checks for `doctorId` and `patientId`.
+    - *Architecture*: The `VerificationHandler` abstract class defines a strict contract. Any future "Real-World" authenticity logic (like Digital Certificates or HIPAA-compliant ID verification) can be "plugged into" the chain as a new concrete class without modifying the existing controller logic.
+- **Audit Logging (Wildcard Eventing)**:
+    - *Placeholders*: Real-time terminal output.
+    - *Architecture*: By subscribing to the `*` wildcard event, the `AuditLogListener` demonstrates a system that is "Secure by Design." Every state transition is captured automatically, creating a foundation for legally-defensible medical records.
+
+### 11.2 Benefit: Maintenance vs. Implementation
+This approach satisfies the **Open-Closed Principle**: The system is **Open** for extension (adding real services) but **Closed** for modification (the core lifecycle logic remains untouched).
