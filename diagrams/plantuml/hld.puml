@@ -1,0 +1,262 @@
+
+@startuml Prescriptify_High_Level_Architecture
+!theme plain
+skinparam componentStyle rectangle
+skinparam backgroundColor #FEFEFE
+skinparam component {
+  BackgroundColor #E1F5FE
+  BorderColor #0288D1
+  FontColor #01579B
+}
+skinparam database {
+  BackgroundColor #FFF9C4
+  BorderColor #FBC02D
+}
+skinparam actor {
+  BackgroundColor #C8E6C9
+  BorderColor #388E3C
+  FontColor #1B5E20
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #9E9E9E
+  FontColor #424242
+  FontStyle bold
+}
+skinparam rectangle {
+  BackgroundColor #E3F2FD
+  BorderColor #1E88E5
+}
+skinparam interface {
+  BackgroundColor #F3E5F5
+  BorderColor #8E24AA
+}
+skinparam queue {
+  BackgroundColor #FFE0B2
+  BorderColor #FB8C00
+}
+
+title Prescriptify - High Level Architecture Diagram\n\n
+
+' ============================================
+' EXTERNAL ACTORS
+' ============================================
+actor "Doctor\n(👨‍⚕️)" as Doctor
+actor "Pharmacist\n(💊)" as Pharmacist
+actor "Patient\n(👤)" as Patient
+actor "Regulator\n(📊)" as Regulator
+actor "Admin\n(👨‍💻)" as Admin
+
+' ============================================
+' PRESENTATION LAYER / API GATEWAY
+' ============================================
+package "API GATEWAY / PRESENTATION LAYER" as PresentationLayer #EDE7F6 {
+  
+  rectangle "Doctor API" as DoctorAPI
+  rectangle "Pharmacist API" as PharmacistAPI
+  rectangle "Patient API" as PatientAPI
+  rectangle "Regulator API" as RegulatorAPI
+  rectangle "Admin API" as AdminAPI
+  
+  rectangle "Authorization Filter\n(JWT / Session)" as AuthFilter #FFCCBC
+  
+  DoctorAPI -down-> AuthFilter
+  PharmacistAPI -down-> AuthFilter
+  PatientAPI -down-> AuthFilter
+  RegulatorAPI -down-> AuthFilter
+  AdminAPI -down-> AuthFilter
+}
+
+' ============================================
+' APPLICATION LAYER - CORE SERVICES
+' ============================================
+package "APPLICATION LAYER (CORE SERVICES)" as AppLayer #E8EAF6 {
+  
+  ' ----- USER MANAGEMENT & RBAC -----
+  package "USER MANAGEMENT & RBAC" as RBAC #C5CAE9 {
+    rectangle "UserService" as UserService
+    rectangle "RoleService" as RoleService
+    rectangle "PermissionService" as PermissionService
+    rectangle "AuthService" as AuthService
+    rectangle "SessionManager" as SessionManager
+  }
+  
+  ' ----- PRESCRIPTION MANAGEMENT -----
+  package "PRESCRIPTION MANAGEMENT SUBSYSTEM" as PrescriptionMgmt #BBDEFB {
+    rectangle "Prescription\nBuilder" as PrescriptionBuilder
+    rectangle "VerificationChain\n(Chain of Responsibility)" as VerificationChain
+    rectangle "Prescription\nStateManager\n(State Pattern)" as StateManager
+    rectangle "Prescription\nRepository" as PrescriptionRepo
+    rectangle "Prescription\n(State Context)" as PrescriptionEntity
+    
+    ' State machine notes
+    note right of StateManager
+      State Machine:
+      PENDING → ACTIVE → DISPENSED
+          ↓         ↓
+      EXPIRED   REVOKED
+    end note
+    
+    PrescriptionBuilder -down-> VerificationChain
+    VerificationChain -down-> StateManager
+    StateManager -down-> PrescriptionRepo
+    StateManager -right-> PrescriptionEntity
+  }
+  
+  ' ----- VERIFICATION SUBSYSTEM -----
+  package "VERIFICATION SUBSYSTEM" as VerificationSub #C8E6C9 {
+    rectangle "Authenticity\nHandler" as AuthenticityHandler
+    rectangle "Duplicate\nHandler" as DuplicateHandler
+    rectangle "License\nHandler" as LicenseHandler
+    rectangle "Blacklist\nHandler" as BlacklistHandler
+  }
+  
+  ' ----- PATIENT SERVICES -----
+  package "PATIENT SERVICES" as PatientServices #FFF9C4 {
+    rectangle "Prescription\nHistory" as HistoryService
+    rectangle "Medication\nSchedule" as ScheduleService
+    rectangle "Safety Info\nService" as SafetyService
+  }
+  
+  ' ----- SCHEDULING SUBSYSTEM -----
+  package "SCHEDULING SUBSYSTEM" as SchedulingSub #FFE0B2 {
+    rectangle "Scheduler\nService" as SchedulerService
+    rectangle "Prescription\nSchedule" as PrescriptionSchedule
+    rectangle "Cron\nTrigger" as CronTrigger
+  }
+  
+  ' Connections between core services
+  StateManager -right-> VerificationSub : uses
+  StateManager -down-> PatientServices : provides data
+  SchedulerService -up-> StateManager : triggers expiration
+}
+
+' ============================================
+' EVENT BUS (PUBLISH-SUBSCRIBE)
+' ============================================
+package "EVENT BUS (PUBLISH-SUBSCRIBE)" as EventBusLayer #FCE4EC {
+  
+  queue "EventBus\n(Singleton / Message Queue Broker)" as EventBus
+  
+  rectangle "Notification\nListener" as NotificationListener
+  rectangle "Analytics\nObserver" as AnalyticsObserver
+  rectangle "Audit\nLogger" as AuditLogger
+  rectangle "Schedule\nListener" as ScheduleListener
+  rectangle "Fraud\nDetector" as FraudDetector
+  
+  EventBus -down-> NotificationListener : dispatches
+  EventBus -down-> AnalyticsObserver : dispatches
+  EventBus -down-> AuditLogger : dispatches
+  EventBus -down-> ScheduleListener : dispatches
+  EventBus -down-> FraudDetector : dispatches
+}
+
+' ============================================
+' ASYNCHRONOUS PROCESSORS
+' ============================================
+package "ASYNCHRONOUS PROCESSORS" as AsyncProcessors #E0F7FA {
+  
+  package "NOTIFICATION FACADE" as NotificationFacadePkg #B2EBF2 {
+    rectangle "Notification\nFacade" as NotificationFacade
+    rectangle "Email\nStrategy" as EmailStrategy
+    rectangle "SMS\nStrategy" as SMSStrategy
+    rectangle "Push\nStrategy" as PushStrategy
+    
+    NotificationFacade --> EmailStrategy : uses
+    NotificationFacade --> SMSStrategy : uses
+    NotificationFacade --> PushStrategy : uses
+  }
+  
+  package "ANALYTICS SUBSYSTEM" as AnalyticsPkg #B2EBF2 {
+    rectangle "Pattern\nDetector" as PatternDetector
+    rectangle "Metric\nCollector" as MetricCollector
+  }
+  
+  package "AUDIT TRAIL" as AuditPkg #B2EBF2 {
+    rectangle "Immutable\nLog Writer" as ImmutableLogWriter
+  }
+  
+  package "FRAUD ALERT SERVICE" as FraudPkg #B2EBF2 {
+    rectangle "Alert\nRepository" as AlertRepository
+  }
+  
+  NotificationListener -down-> NotificationFacade
+  AnalyticsObserver -down-> AnalyticsPkg
+  AuditLogger -down-> AuditPkg
+  FraudDetector -down-> FraudPkg
+}
+
+' ============================================
+' DATA LAYER
+' ============================================
+package "DATA LAYER" as DataLayer #EFEBE9 {
+  
+  database "CENTRALIZED DATABASE\n(Single Source of Truth)" as CentralDB #FFF9C4 {
+    
+    rectangle "Prescriptions\nTable" as PrescriptionsTable
+    rectangle "Users Table" as UsersTable
+    rectangle "Roles Table" as RolesTable
+    rectangle "Audit Logs\nTable" as AuditTable
+    rectangle "Analytics\nTable" as AnalyticsTable
+    rectangle "Schedules\nTable" as SchedulesTable
+  }
+  
+  note bottom of CentralDB
+    - ACID Transactions
+    - Encryption at Rest
+    - Backup & Replication
+  end note
+}
+
+' ============================================
+' CONNECTIONS FROM ACTORS TO API
+' ============================================
+Doctor --> DoctorAPI : "REST / gRPC"
+Pharmacist --> PharmacistAPI : "REST / gRPC"
+Patient --> PatientAPI : "REST / gRPC"
+Regulator --> RegulatorAPI : "REST / gRPC"
+Admin --> AdminAPI : "REST / gRPC"
+
+' ============================================
+' CONNECTIONS FROM API LAYER TO APP LAYER
+' ============================================
+AuthFilter -down-> UserService : "authenticate &\nauthorize"
+AuthFilter -down-> PrescriptionBuilder : "create prescription"
+AuthFilter -down-> StateManager : "manage lifecycle"
+
+' ============================================
+' CONNECTIONS TO EVENT BUS
+' ============================================
+StateManager -down-> EventBus : "publish events\n(PrescriptionCreated,\nStateChanged, etc.)"
+
+' ============================================
+' CONNECTIONS TO DATA LAYER
+' ============================================
+PrescriptionRepo -down-> PrescriptionsTable : "CRUD"
+UserService -down-> UsersTable : "CRUD"
+RoleService -down-> RolesTable : "CRUD"
+ImmutableLogWriter -down-> AuditTable : "INSERT"
+MetricCollector -down-> AnalyticsTable : "INSERT/UPDATE"
+SchedulerService -down-> SchedulesTable : "read/write"
+
+' ============================================
+' LEGEND / COLOR CODING
+' ============================================
+legend right
+  <b>Legend:</b>
+  <color #0288D1>■</color> Components / Services
+  <color #FBC02D>■</color> Database
+  <color #388E3C>■</color> Actors
+  <color #FB8C00>■</color> Event Bus (Queue)
+  <color #8E24AA>■</color> Interfaces / Facades
+  <b>Key Patterns:</b>
+  • Publish-Subscribe (EventBus)
+  • State Pattern (Prescription Lifecycle)
+  • Chain of Responsibility (Verification)
+  • Builder (Prescription Creation)
+  • Strategy (Notifications)
+  • Facade (Notification Simplification)
+  • RBAC (Access Control)
+endlegend
+
+@enduml
