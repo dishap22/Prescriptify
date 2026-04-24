@@ -1,0 +1,40 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Patient" as P
+actor "Doctor" as D
+actor "Pharmacist" as PH
+actor "Administrator" as A
+
+rectangle "Prescriptify Platform" {
+  
+  usecase "View Prescription History" as UC1
+  usecase "Track Medication Schedule" as UC2
+  usecase "Receive Expiry Alert" as UC3
+  usecase "View Safety Information" as UC4
+  
+  usecase "Create Prescription" as UC5
+  usecase "Revoke Prescription" as UC6
+  
+  usecase "Verify Prescription" as UC7
+  usecase "Dispense Medication" as UC8
+  
+  usecase "Manage Users & Roles" as UC9
+  usecase "View Audit Logs" as UC10
+  
+  P --> UC1
+  P --> UC2
+  P --> UC3
+  P --> UC4
+  
+  D --> UC5
+  D --> UC6
+  
+  PH --> UC7
+  PH --> UC8
+  
+  A --> UC9
+  A --> UC10
+}
+@enduml
