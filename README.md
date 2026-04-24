@@ -55,7 +55,7 @@ Prescriptify is a comprehensive prescription management system designed to strea
 
 For deep technical details on design patterns, see [Doc.md](Doc.md).
 
-### 3, Testing
+### 3. Testing
 
 Testing can be done manually, or through the automated test suit, by running
 

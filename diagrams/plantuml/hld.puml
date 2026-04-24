@@ -41,25 +41,25 @@ title Prescriptify - High Level Architecture Diagram\n\n
 ' ============================================
 ' EXTERNAL ACTORS
 ' ============================================
-actor "Doctor\n(👨‍⚕️)" as Doctor
-actor "Pharmacist\n(💊)" as Pharmacist
-actor "Patient\n(👤)" as Patient
-actor "Regulator\n(📊)" as Regulator
-actor "Admin\n(👨‍💻)" as Admin
+actor "Doctor" as Doctor
+actor "Pharmacist" as Pharmacist
+actor "Patient" as Patient
+actor "Regulator" as Regulator
+actor "Admin" as Admin
 
 ' ============================================
 ' PRESENTATION LAYER / API GATEWAY
 ' ============================================
 package "API GATEWAY / PRESENTATION LAYER" as PresentationLayer #EDE7F6 {
-  
+
   rectangle "Doctor API" as DoctorAPI
   rectangle "Pharmacist API" as PharmacistAPI
   rectangle "Patient API" as PatientAPI
   rectangle "Regulator API" as RegulatorAPI
   rectangle "Admin API" as AdminAPI
-  
+
   rectangle "Authorization Filter\n(JWT / Session)" as AuthFilter #FFCCBC
-  
+
   DoctorAPI -down-> AuthFilter
   PharmacistAPI -down-> AuthFilter
   PatientAPI -down-> AuthFilter
@@ -71,7 +71,7 @@ package "API GATEWAY / PRESENTATION LAYER" as PresentationLayer #EDE7F6 {
 ' APPLICATION LAYER - CORE SERVICES
 ' ============================================
 package "APPLICATION LAYER (CORE SERVICES)" as AppLayer #E8EAF6 {
-  
+
   ' ----- USER MANAGEMENT & RBAC -----
   package "USER MANAGEMENT & RBAC" as RBAC #C5CAE9 {
     rectangle "UserService" as UserService
@@ -80,7 +80,7 @@ package "APPLICATION LAYER (CORE SERVICES)" as AppLayer #E8EAF6 {
     rectangle "AuthService" as AuthService
     rectangle "SessionManager" as SessionManager
   }
-  
+
   ' ----- PRESCRIPTION MANAGEMENT -----
   package "PRESCRIPTION MANAGEMENT SUBSYSTEM" as PrescriptionMgmt #BBDEFB {
     rectangle "Prescription\nBuilder" as PrescriptionBuilder
@@ -88,7 +88,7 @@ package "APPLICATION LAYER (CORE SERVICES)" as AppLayer #E8EAF6 {
     rectangle "Prescription\nStateManager\n(State Pattern)" as StateManager
     rectangle "Prescription\nRepository" as PrescriptionRepo
     rectangle "Prescription\n(State Context)" as PrescriptionEntity
-    
+
     ' State machine notes
     note right of StateManager
       State Machine:
@@ -96,13 +96,13 @@ package "APPLICATION LAYER (CORE SERVICES)" as AppLayer #E8EAF6 {
           ↓         ↓
       EXPIRED   REVOKED
     end note
-    
+
     PrescriptionBuilder -down-> VerificationChain
     VerificationChain -down-> StateManager
     StateManager -down-> PrescriptionRepo
     StateManager -right-> PrescriptionEntity
   }
-  
+
   ' ----- VERIFICATION SUBSYSTEM -----
   package "VERIFICATION SUBSYSTEM" as VerificationSub #C8E6C9 {
     rectangle "Authenticity\nHandler" as AuthenticityHandler
@@ -110,21 +110,21 @@ package "APPLICATION LAYER (CORE SERVICES)" as AppLayer #E8EAF6 {
     rectangle "License\nHandler" as LicenseHandler
     rectangle "Blacklist\nHandler" as BlacklistHandler
   }
-  
+
   ' ----- PATIENT SERVICES -----
   package "PATIENT SERVICES" as PatientServices #FFF9C4 {
     rectangle "Prescription\nHistory" as HistoryService
     rectangle "Medication\nSchedule" as ScheduleService
     rectangle "Safety Info\nService" as SafetyService
   }
-  
+
   ' ----- SCHEDULING SUBSYSTEM -----
   package "SCHEDULING SUBSYSTEM" as SchedulingSub #FFE0B2 {
     rectangle "Scheduler\nService" as SchedulerService
     rectangle "Prescription\nSchedule" as PrescriptionSchedule
     rectangle "Cron\nTrigger" as CronTrigger
   }
-  
+
   ' Connections between core services
   StateManager -right-> VerificationSub : uses
   StateManager -down-> PatientServices : provides data
@@ -135,15 +135,15 @@ package "APPLICATION LAYER (CORE SERVICES)" as AppLayer #E8EAF6 {
 ' EVENT BUS (PUBLISH-SUBSCRIBE)
 ' ============================================
 package "EVENT BUS (PUBLISH-SUBSCRIBE)" as EventBusLayer #FCE4EC {
-  
+
   queue "EventBus\n(Singleton / Message Queue Broker)" as EventBus
-  
+
   rectangle "Notification\nListener" as NotificationListener
   rectangle "Analytics\nObserver" as AnalyticsObserver
   rectangle "Audit\nLogger" as AuditLogger
   rectangle "Schedule\nListener" as ScheduleListener
   rectangle "Fraud\nDetector" as FraudDetector
-  
+
   EventBus -down-> NotificationListener : dispatches
   EventBus -down-> AnalyticsObserver : dispatches
   EventBus -down-> AuditLogger : dispatches
@@ -155,31 +155,31 @@ package "EVENT BUS (PUBLISH-SUBSCRIBE)" as EventBusLayer #FCE4EC {
 ' ASYNCHRONOUS PROCESSORS
 ' ============================================
 package "ASYNCHRONOUS PROCESSORS" as AsyncProcessors #E0F7FA {
-  
+
   package "NOTIFICATION FACADE" as NotificationFacadePkg #B2EBF2 {
     rectangle "Notification\nFacade" as NotificationFacade
     rectangle "Email\nStrategy" as EmailStrategy
     rectangle "SMS\nStrategy" as SMSStrategy
     rectangle "Push\nStrategy" as PushStrategy
-    
+
     NotificationFacade --> EmailStrategy : uses
     NotificationFacade --> SMSStrategy : uses
     NotificationFacade --> PushStrategy : uses
   }
-  
+
   package "ANALYTICS SUBSYSTEM" as AnalyticsPkg #B2EBF2 {
     rectangle "Pattern\nDetector" as PatternDetector
     rectangle "Metric\nCollector" as MetricCollector
   }
-  
+
   package "AUDIT TRAIL" as AuditPkg #B2EBF2 {
     rectangle "Immutable\nLog Writer" as ImmutableLogWriter
   }
-  
+
   package "FRAUD ALERT SERVICE" as FraudPkg #B2EBF2 {
     rectangle "Alert\nRepository" as AlertRepository
   }
-  
+
   NotificationListener -down-> NotificationFacade
   AnalyticsObserver -down-> AnalyticsPkg
   AuditLogger -down-> AuditPkg
@@ -190,9 +190,9 @@ package "ASYNCHRONOUS PROCESSORS" as AsyncProcessors #E0F7FA {
 ' DATA LAYER
 ' ============================================
 package "DATA LAYER" as DataLayer #EFEBE9 {
-  
+
   database "CENTRALIZED DATABASE\n(Single Source of Truth)" as CentralDB #FFF9C4 {
-    
+
     rectangle "Prescriptions\nTable" as PrescriptionsTable
     rectangle "Users Table" as UsersTable
     rectangle "Roles Table" as RolesTable
@@ -200,7 +200,7 @@ package "DATA LAYER" as DataLayer #EFEBE9 {
     rectangle "Analytics\nTable" as AnalyticsTable
     rectangle "Schedules\nTable" as SchedulesTable
   }
-  
+
   note bottom of CentralDB
     - ACID Transactions
     - Encryption at Rest
